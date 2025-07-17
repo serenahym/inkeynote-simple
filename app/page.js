@@ -1,113 +1,204 @@
-import Image from 'next/image'
+'use client'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.js</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  const [selectedConcerns, setSelectedConcerns] = useState([])
+  const [hasRecipe, setHasRecipe] = useState(false)
+  const [currentRecipe, setCurrentRecipe] = useState(null)
+  const router = useRouter()
+
+  // 페이지 로드 시 저장된 레시피 확인
+  useEffect(() => {
+    const savedRecipe = localStorage.getItem('currentRecipe')
+    if (savedRecipe) {
+      setCurrentRecipe(JSON.parse(savedRecipe))
+      setHasRecipe(true)
+    }
+  }, [])
+
+  const concerns = [
+    { id: 'acne', emoji: '🔴', name: '여드름' },
+    { id: 'dry', emoji: '💧', name: '건조함' },
+    { id: 'dull', emoji: '☀️', name: '칙칙한 피부' },
+    { id: 'sensitive', emoji: '😣', name: '민감성' },
+    { id: 'aging', emoji: '⏰', name: '노화' },
+    { id: 'etc', emoji: '✨', name: '기타' }
+  ]
+
+  const toggleConcern = (concernId) => {
+    if (selectedConcerns.includes(concernId)) {
+      setSelectedConcerns(selectedConcerns.filter(id => id !== concernId))
+    } else if (selectedConcerns.length < 2) {
+      setSelectedConcerns([...selectedConcerns, concernId])
+    }
+  }
+
+  const handleNext = () => {
+    if (selectedConcerns.length > 0) {
+      router.push(`/recipes?concerns=${selectedConcerns.join(',')}`)
+    }
+  }
+
+  const handleStartRoutine = () => {
+    router.push(`/recipes/${currentRecipe.id}`)
+  }
+
+  const handleChangeRecipe = () => {
+    localStorage.removeItem('currentRecipe')
+    setHasRecipe(false)
+    setCurrentRecipe(null)
+  }
+
+  // 대시보드 화면
+  if (hasRecipe && currentRecipe) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-4">
+        <div className="max-w-sm mx-auto px-4 py-8">
+          {/* 헤더 */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">
+              안녕하세요! 👋
+            </h1>
+            <p className="text-gray-600">오늘도 건강한 피부 만들어요</p>
+          </div>
+
+          {/* 현재 진행 중인 레시피 */}
+          <div className="bg-blue-50 rounded-2xl p-5 mb-6">
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <p className="text-sm text-blue-600 mb-1">진행 중인 레시피</p>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {currentRecipe.title}
+                </h2>
+              </div>
+              <span className="text-2xl">{currentRecipe.emoji || '✨'}</span>
+            </div>
+            
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex-1 bg-blue-100 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all"
+                  style={{ width: `${currentRecipe.progress || 25}%` }}
+                />
+              </div>
+              <span className="text-xs text-blue-600">
+                {currentRecipe.daysCompleted || 7}/28일
+              </span>
+            </div>
+
+            <button
+              onClick={handleStartRoutine}
+              className="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              오늘의 루틴 시작하기
+            </button>
+          </div>
+
+          {/* 오늘의 체크리스트 미리보기 */}
+          <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <span>☀️</span> 오늘의 할 일
+            </h3>
+            <div className="space-y-2">
+              <div className="flex items-center gap-3 text-sm">
+                <input type="checkbox" className="w-4 h-4" disabled />
+                <span className="text-gray-700">아침 루틴 (5단계)</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <input type="checkbox" className="w-4 h-4" disabled />
+                <span className="text-gray-700">저녁 루틴 (4단계)</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <input type="checkbox" className="w-4 h-4" disabled />
+                <span className="text-gray-700">피부 상태 기록</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 빠른 통계 */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            <div className="bg-white rounded-xl p-4 text-center">
+              <p className="text-2xl font-bold text-blue-600">7</p>
+              <p className="text-xs text-gray-600">연속 실천일</p>
+            </div>
+            <div className="bg-white rounded-xl p-4 text-center">
+              <p className="text-2xl font-bold text-green-600">85%</p>
+              <p className="text-xs text-gray-600">이번주 달성률</p>
+            </div>
+          </div>
+
+          {/* 레시피 변경 버튼 */}
+          <button
+            onClick={handleChangeRecipe}
+            className="w-full text-gray-500 text-sm text-center hover:text-gray-700"
           >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+            다른 레시피 찾아보기
+          </button>
         </div>
       </div>
+    )
+  }
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
+  // 온보딩 화면 (기존 코드)
+  return (
+    <div className="min-h-screen bg-gray-50 pb-4">
+      <div className="max-w-sm mx-auto px-4 py-8">
+        {/* 헤더 */}
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            INKEYNOTE
+          </h1>
+          <p className="text-sm text-gray-600">
+            당신의 피부를 위한 맞춤 레시피
+          </p>
+        </div>
+
+        {/* 온보딩 카드 */}
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-center mb-6">
+            어떤 피부 고민이 있으신가요?
+          </h2>
+          
+          {/* 컴팩트한 버튼들 */}
+          <div className="space-y-2">
+            {concerns.map((concern) => (
+              <button
+                key={concern.id}
+                onClick={() => toggleConcern(concern.id)}
+                className={`w-full p-3 text-sm flex items-center gap-3 rounded-xl border transition-all ${
+                  selectedConcerns.includes(concern.id)
+                    ? 'border-blue-400 bg-blue-50 text-blue-700'
+                    : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50'
+                }`}
+              >
+                <span className="text-xl">{concern.emoji}</span>
+                <span className="font-medium">{concern.name}</span>
+                {selectedConcerns.includes(concern.id) && (
+                  <span className="ml-auto">✓</span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={handleNext}
+            disabled={selectedConcerns.length === 0}
+            className={`w-full mt-6 py-3 rounded-xl text-sm font-medium transition-colors ${
+              selectedConcerns.length > 0
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            다음
+          </button>
+        </div>
+
+        {/* 하단 안내 */}
+        <p className="text-center text-xs text-gray-500 mt-6">
+          {selectedConcerns.length}/2개 선택됨
+        </p>
       </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800 hover:dark:bg-opacity-30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore the Next.js 13 playground.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+    </div>
   )
 }
