@@ -38,22 +38,67 @@ export default function DiaryPage() {
   // 카메라 시작
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: 'user', // 전면 카메라
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        } 
-      })
+      // iOS 체크
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+      
+      // 먼저 권한 확인
+      const permissions = await navigator.permissions.query({ name: 'camera' }).catch(() => null)
+      console.log('Camera permission:', permissions?.state)
+      
+      // 카메라 스트림 요청
+      const constraints = {
+        video: isIOS 
+          ? {
+              facingMode: { ideal: 'user' },
+              width: { ideal: 640 },
+              height: { ideal: 480 }
+            }
+          : {
+              facingMode: 'user',
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            },
+        audio: false
+      }
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints)
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream
+        // iOS에서는 명시적으로 play() 호출
+        if (isIOS) {
+          videoRef.current.setAttribute('autoplay', '')
+          videoRef.current.setAttribute('playsinline', '')
+          await videoRef.current.play()
+        }
         streamRef.current = stream
       }
       setShowCamera(true)
     } catch (err) {
       console.error('카메라 접근 오류:', err)
-      alert('카메라를 사용할 수 없습니다. 카메라 권한을 확인해주세요.')
+      
+      // 더 자세한 에러 메시지
+      if (err.name === 'NotAllowedError') {
+        alert('카메라 권한이 필요합니다.\n\n설정 > Safari > 카메라에서 권한을 허용해주세요.')
+      } else if (err.name === 'NotFoundError') {
+        alert('카메라를 찾을 수 없습니다.')
+      } else if (err.name === 'NotReadableError') {
+        alert('카메라가 이미 다른 앱에서 사용 중입니다.')
+      } else if (err.name === 'OverconstrainedError') {
+        // 제약 조건이 맞지 않을 때 - 더 간단한 설정으로 재시도
+        try {
+          const simpleStream = await navigator.mediaDevices.getUserMedia({ video: true })
+          if (videoRef.current) {
+            videoRef.current.srcObject = simpleStream
+            streamRef.current = simpleStream
+          }
+          setShowCamera(true)
+        } catch (retryErr) {
+          alert('카메라를 시작할 수 없습니다: ' + retryErr.message)
+        }
+      } else {
+        alert('카메라 오류: ' + err.message)
+      }
     }
   }
 
@@ -442,15 +487,41 @@ export default function DiaryPage() {
                             </button>
                           </div>
                         ) : (
-                          <button
-                            onClick={startCamera}
-                            className="w-full py-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
-                          >
+                          <div className="space-y-3">
+                            <button
+                              onClick={startCamera}
+                              className="w-full py-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
+                            >
+                              <div className="text-center">
+                                <span className="text-3xl mb-2">📷</span>
+                                <p className="text-sm text-gray-600">카메라로 촬영하기</p>
+                              </div>
+                            </button>
+                            
+                            {/* iOS 대안 - 파일 선택 */}
                             <div className="text-center">
-                              <span className="text-3xl mb-2">📷</span>
-                              <p className="text-sm text-gray-600">사진 촬영하기</p>
+                              <p className="text-xs text-gray-500 mb-2">카메라가 안 되시나요?</p>
+                              <label className="inline-block px-4 py-2 bg-gray-100 rounded-lg text-sm text-gray-700 hover:bg-gray-200 cursor-pointer">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  capture="environment"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files[0]
+                                    if (file) {
+                                      const reader = new FileReader()
+                                      reader.onloadend = () => {
+                                        setTodayPhoto(reader.result)
+                                      }
+                                      reader.readAsDataURL(file)
+                                    }
+                                  }}
+                                />
+                                갤러리에서 선택 / 사진 촬영
+                              </label>
                             </div>
-                          </button>
+                          </div>
                         )}
                       </div>
 
@@ -557,15 +628,41 @@ export default function DiaryPage() {
                     </button>
                   </div>
                 ) : (
-                  <button
-                    onClick={startCamera}
-                    className="w-full py-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
-                  >
+                  <div className="space-y-3">
+                    <button
+                      onClick={startCamera}
+                      className="w-full py-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
+                    >
+                      <div className="text-center">
+                        <span className="text-3xl mb-2">📷</span>
+                        <p className="text-sm text-gray-600">카메라로 촬영하기</p>
+                      </div>
+                    </button>
+                    
+                    {/* iOS 대안 - 파일 선택 */}
                     <div className="text-center">
-                      <span className="text-3xl mb-2">📷</span>
-                      <p className="text-sm text-gray-600">사진 촬영하기</p>
+                      <p className="text-xs text-gray-500 mb-2">카메라가 안 되시나요?</p>
+                      <label className="inline-block px-4 py-2 bg-gray-100 rounded-lg text-sm text-gray-700 hover:bg-gray-200 cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files[0]
+                            if (file) {
+                              const reader = new FileReader()
+                              reader.onloadend = () => {
+                                setTodayPhoto(reader.result)
+                              }
+                              reader.readAsDataURL(file)
+                            }
+                          }}
+                        />
+                        갤러리에서 선택 / 사진 촬영
+                      </label>
                     </div>
-                  </button>
+                  </div>
                 )}
               </div>
 
@@ -611,8 +708,17 @@ export default function DiaryPage() {
             <video 
               ref={videoRef}
               autoPlay
-              playsInline
+              playsInline  // iOS에서 중요!
+              muted        // iOS에서 자동재생을 위해 필요
               className="w-full h-full object-cover"
+              onLoadedMetadata={() => {
+                // 비디오가 로드되면 재생 시작
+                if (videoRef.current) {
+                  videoRef.current.play().catch(err => {
+                    console.error('Video play error:', err)
+                  })
+                }
+              }}
             />
             <canvas 
               ref={canvasRef}
