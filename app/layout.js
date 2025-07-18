@@ -1,23 +1,5 @@
-import { Inter } from 'next/font/google'
-import './globals.css'
-import BottomNav from './components/BottomNav'
-
-const inter = Inter({ subsets: ['latin'] })
-
 export const metadata = {
-  title: 'INKEYNOTE',
-  description: '맞춤형 스킨케어 레시피',
-}
-
-export default function RootLayout({ children }) {
-  return (
-    <html lang="ko">
-      <body className={inter.className}>
-        <div className="pb-16"> {/* 네비게이션 높이만큼 패딩 추가 */}
-          {children}
-        </div>
-        <BottomNav />
-      </body>
-    </html>
-  )
+  title: 'Skinner - 21일 피부 습관 만들기',
+  description: '매일 5분, 21일이면 피부가 달라집니다',
+  // ... 
 }
