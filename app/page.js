@@ -27,11 +27,22 @@ export default function Home() {
   ]
 
   const toggleConcern = (concernId) => {
-    if (selectedConcerns.includes(concernId)) {
-      setSelectedConcerns(selectedConcerns.filter(id => id !== concernId))
-    } else if (selectedConcerns.length < 2) {
-      setSelectedConcerns([...selectedConcerns, concernId])
-    }
+    console.log('Toggle concern:', concernId) // 디버깅용
+    console.log('Current selected:', selectedConcerns) // 디버깅용
+    
+    setSelectedConcerns(prev => {
+      if (prev.includes(concernId)) {
+        // 이미 선택된 경우 제거
+        return prev.filter(id => id !== concernId)
+      } else if (prev.length < 2) {
+        // 2개 미만이면 추가
+        return [...prev, concernId]
+      } else {
+        // 이미 2개 선택된 경우
+        alert('최대 2개까지 선택 가능합니다!')
+        return prev
+      }
+    })
   }
 
   const handleNext = () => {
@@ -41,19 +52,20 @@ export default function Home() {
   }
 
   const handleStartRoutine = () => {
-    router.push(`/recipes/${currentRecipe.id}`)
+    router.push('/today-routine')
   }
 
   const handleChangeRecipe = () => {
     localStorage.removeItem('currentRecipe')
     setHasRecipe(false)
     setCurrentRecipe(null)
+    setSelectedConcerns([]) // 선택 초기화
   }
 
   // 대시보드 화면
   if (hasRecipe && currentRecipe) {
     return (
-      <div className="min-h-screen bg-gray-50 pb-4">
+      <div className="min-h-screen bg-gray-50 pb-20">
         <div className="max-w-sm mx-auto px-4 py-8">
           {/* 헤더 */}
           <div className="mb-6">
@@ -136,13 +148,43 @@ export default function Home() {
             다른 레시피 찾아보기
           </button>
         </div>
+
+        {/* 하단 네비게이션 */}
+        <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
+          <div className="max-w-sm mx-auto">
+            <div className="flex justify-around py-2">
+              <button className="flex flex-col items-center gap-1 p-2">
+                <span className="text-2xl">🏠</span>
+                <span className="text-xs text-gray-600">홈</span>
+              </button>
+              <button 
+                onClick={() => router.push('/recipes')}
+                className="flex flex-col items-center gap-1 p-2"
+              >
+                <span className="text-2xl">📋</span>
+                <span className="text-xs text-gray-600">레시피</span>
+              </button>
+              <button 
+                onClick={() => router.push('/diary')}
+                className="flex flex-col items-center gap-1 p-2"
+              >
+                <span className="text-2xl">📖</span>
+                <span className="text-xs text-gray-600">다이어리</span>
+              </button>
+              <button className="flex flex-col items-center gap-1 p-2">
+                <span className="text-2xl">👤</span>
+                <span className="text-xs text-gray-600">프로필</span>
+              </button>
+            </div>
+          </div>
+        </nav>
       </div>
     )
   }
 
   // 온보딩 화면 (기존 코드)
   return (
-    <div className="min-h-screen bg-gray-50 pb-4">
+    <div className="min-h-screen bg-gray-50 pb-20">
       <div className="max-w-sm mx-auto px-4 py-8">
         {/* 헤더 */}
         <div className="text-center mb-8">
@@ -166,16 +208,17 @@ export default function Home() {
               <button
                 key={concern.id}
                 onClick={() => toggleConcern(concern.id)}
-                className={`w-full p-3 text-sm flex items-center gap-3 rounded-xl border transition-all ${
+                disabled={false} // 명시적으로 disabled false
+                className={`w-full p-3 text-sm flex items-center gap-3 rounded-xl border transition-all cursor-pointer ${
                   selectedConcerns.includes(concern.id)
-                    ? 'border-blue-400 bg-blue-50 text-blue-700'
-                    : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50'
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                 }`}
               >
                 <span className="text-xl">{concern.emoji}</span>
                 <span className="font-medium">{concern.name}</span>
                 {selectedConcerns.includes(concern.id) && (
-                  <span className="ml-auto">✓</span>
+                  <span className="ml-auto text-blue-600">✓</span>
                 )}
               </button>
             ))}
@@ -198,7 +241,50 @@ export default function Home() {
         <p className="text-center text-xs text-gray-500 mt-6">
           {selectedConcerns.length}/2개 선택됨
         </p>
+
+        {/* 디버깅용 - 나중에 제거 */}
+        <div className="mt-4 text-center">
+          <button
+            onClick={() => {
+              console.log('Selected concerns:', selectedConcerns)
+              alert(`현재 선택: ${selectedConcerns.join(', ')}`)
+            }}
+            className="text-xs text-gray-400 underline"
+          >
+            선택 상태 확인 (디버깅)
+          </button>
+        </div>
       </div>
+
+      {/* 하단 네비게이션 */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
+        <div className="max-w-sm mx-auto">
+          <div className="flex justify-around py-2">
+            <button className="flex flex-col items-center gap-1 p-2">
+              <span className="text-2xl">🏠</span>
+              <span className="text-xs text-gray-600">홈</span>
+            </button>
+            <button 
+              onClick={() => router.push('/recipes')}
+              className="flex flex-col items-center gap-1 p-2"
+            >
+              <span className="text-2xl">📋</span>
+              <span className="text-xs text-gray-600">레시피</span>
+            </button>
+            <button 
+              onClick={() => router.push('/diary')}
+              className="flex flex-col items-center gap-1 p-2"
+            >
+              <span className="text-2xl">📖</span>
+              <span className="text-xs text-gray-600">다이어리</span>
+            </button>
+            <button className="flex flex-col items-center gap-1 p-2">
+              <span className="text-2xl">👤</span>
+              <span className="text-xs text-gray-600">프로필</span>
+            </button>
+          </div>
+        </div>
+      </nav>
     </div>
   )
 }
